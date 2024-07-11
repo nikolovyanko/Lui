@@ -11,7 +11,6 @@ const loadAssistantById = async (client) => {
     );
 
     if (assistant) {
-      console.log("Assistant found:", assistant);
       return assistant;
     } else {
       console.log("Assistant not found");

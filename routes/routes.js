@@ -6,8 +6,7 @@ const openaiClient = new OpenAI();
 const router = express.Router();
 
 // Load assistant by ID from ENV
-const assistant_id = loadAssistantById(openaiClient);
-console.log("Assistant created with ID:", assistant_id);
+const aiAssistant = await loadAssistantById(openaiClient);
 
 // Start conversation
 router.get("/start", async (req, res) => {
@@ -30,26 +29,34 @@ router.post("/chat", async (req, res) => {
     message
   );
 
-  await openaiClient.beta.threads.messages.create(thread_id, "user", message);
-  const run = await openaiClient.beta.threads.runs.create(
+  const gptResponse = await openaiClient.beta.threads.messages.create(
     thread_id,
-    assistant_id
+    {
+      role: "user",
+      content: message,
+    }
   );
+
+  const run = await openaiClient.beta.threads.runs.create(thread_id, {
+    assistant_id: aiAssistant.id,
+  });
+
   console.log("Run started with ID:", run.id);
   res.json({ run_id: run.id });
 });
 
 // Check status of run
 router.post("/check", async (req, res) => {
-  ({ ERROR, COMPLETED, TIMEOUT, REQUIRES_ACTION } = STATUS_CODES);
+  const { ERROR, COMPLETED, TIMEOUT, REQUIRES_ACTION } = STATUS_CODES;
   const { thread_id, run_id } = req.body;
   if (!thread_id || !run_id) {
     console.log("Error: Missing thread_id or run_id in /check");
     return res.json({ response: ERROR });
   }
 
-  //delay the execution of the code by 7 seconds
-  setTimeout(async () => {
+  const futureTime = new Date().getTime() + 7000; // 7 seconds in the future\
+  const timeNow = new Date().getTime();
+  while (timeNow < futureTime) {
     const run = await openaiClient.beta.threads.runs.retrieve(
       thread_id,
       run_id
@@ -59,19 +66,20 @@ router.post("/check", async (req, res) => {
 
     //
     if (status === COMPLETED) {
-      const messages = await openaiClient.beta.threads.runs.listMessages(
+      const messages = await openaiClient.beta.threads.runs.retrieve(
         thread_id,
         run_id
       );
-      messageContent = messages.data[0].message.content;
 
-      const response = messages.data[0].message.content;
-      console.log("Response:", response);
+      console.log("Messages:", messages);
+
+      const response = messages.data[0].message.content.value;
+
       return res.json({ response: response });
     }
 
     res.json({ response: COMPLETED });
-  }, 7000);
+  }
 
   console.log("Run timed out");
   res.json({ response: TIMEOUT });
