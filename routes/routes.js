@@ -66,14 +66,12 @@ router.post("/check", async (req, res) => {
 
     //
     if (status === COMPLETED) {
-      const messages = await openaiClient.beta.threads.runs.retrieve(
+      const messages = await openaiClient.beta.threads.messages.list(
         thread_id,
         run_id
       );
 
-      console.log("Messages:", messages);
-
-      const response = messages.data[0].message.content.value;
+      const response = await messages.data[0].content[0].text.value;
 
       return res.json({ response: response });
     }
