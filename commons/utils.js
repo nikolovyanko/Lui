@@ -22,11 +22,4 @@ const loadAssistantById = async (client) => {
   }
 };
 
-const STATUS_CODES = {
-  COMPLETED: "completed",
-  ERROR: "error",
-  TIMEOUT: "timeout",
-  REQUIRES_ACTION: "requires_action",
-};
-
-export { loadAssistantById, STATUS_CODES };
+export { loadAssistantById };
