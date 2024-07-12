@@ -1,86 +1,128 @@
 import express from "express";
-import { loadAssistantById, STATUS_CODES } from "../commons/utils.js";
 import OpenAI from "openai";
 
-const openaiClient = new OpenAI();
 const router = express.Router();
+let aiClients = new Map();
 
-// Load assistant by ID from ENV
-const aiAssistant = await loadAssistantById(openaiClient);
+// let aiAssistant = await loadAssistantById(openaiClient);
 
 // Start conversation
 router.get("/start", async (req, res) => {
-  const thread = await openaiClient.beta.threads.create();
-  console.log("New conversation started with thread ID:", thread.id);
+  const API_KEY = req.header("Authorization");
+  const ASSISTANT_ID = req.header("Assistant-Id");
+
+  if (!API_KEY || !ASSISTANT_ID) {
+    res.status(401).json({ error: "Unauthorized!" });
+  }
+
+  const openAiClient = await
+    getOpenAiClient(API_KEY, ASSISTANT_ID);
+
+  const thread = await
+    openAiClient.beta.threads.create();
+
   res.json({ thread_id: thread.id });
 });
 
 // Chat
 router.post("/chat", async (req, res) => {
-  const { thread_id, message } = req.body;
-  if (!thread_id) {
-    console.log("Error: Missing thread_id in /chat");
+  const API_KEY = req.header("Authorization");
+  const assistantId = req.header("Assistant-Id");
+  const { thread_id, message} = req.body;
+
+  if (!API_KEY ) {
+    return res.status(401).json({ error: "Unauthorized!" });
+  }
+
+  if (!thread_id || !message || !assistantId) {
+    console.error("Error: Missing thread_id, message or assistantId in /chat");
     return res.status(400).json({ error: "Missing thread_id" });
   }
-  console.log(
-    "Received message for thread ID:",
-    thread_id,
-    "Message:",
-    message
-  );
 
-  const gptResponse = await openaiClient.beta.threads.messages.create(
-    thread_id,
-    {
-      role: "user",
-      content: message,
-    }
-  );
+  try {
+    const openaiClient = await getOpenAiClient(API_KEY, assistantId);
 
-  const run = await openaiClient.beta.threads.runs.create(thread_id, {
-    assistant_id: aiAssistant.id,
-  });
+    await openaiClient.beta.threads.messages
+      .create(
+        thread_id,
+        {
+          role: "user",
+          content: message,
+        }
+      );
 
-  console.log("Run started with ID:", run.id);
-  res.json({ run_id: run.id });
+    const run = await openaiClient.beta.threads.runs
+      .create(thread_id, {
+        assistant_id: assistantId,
+      });
+
+    res.json({ run_id: run.id });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // Check status of run
 router.post("/check", async (req, res) => {
-  const { ERROR, COMPLETED, TIMEOUT, REQUIRES_ACTION } = STATUS_CODES;
+  const API_KEY = req.header("Authorization");
+  const assistantId = req.header("Assistant-Id");
   const { thread_id, run_id } = req.body;
-  if (!thread_id || !run_id) {
-    console.log("Error: Missing thread_id or run_id in /check");
-    return res.json({ response: ERROR });
+
+  if (!API_KEY) {
+    return res.status(401).json({ error: "Unauthorized!" });
   }
 
-  const futureTime = new Date().getTime() + 7000; // 7 seconds in the future\
-  const timeNow = new Date().getTime();
-  while (timeNow < futureTime) {
-    const run = await openaiClient.beta.threads.runs.retrieve(
-      thread_id,
-      run_id
-    );
-    const status = run.status;
-    console.log("Run status:", status);
+  if (!thread_id || !run_id || !assistantId) {
+    console.error("Error: Missing thread_id or run_id in /check");
+    return res.json({ response: STATUS_CODES.ERROR });
+  }
 
-    //
-    if (status === COMPLETED) {
-      const messages = await openaiClient.beta.threads.messages.list(
+  try {
+    const openaiClient = await getOpenAiClient(API_KEY, assistantId);
+    const futureTime = new Date().getTime() + 7000; // 7 seconds in the future
+    while (new Date().getTime() < futureTime) {
+      const run = await openaiClient.beta.threads.runs.retrieve(
         thread_id,
         run_id
       );
+      const status = run.status;
 
-      const response = await messages.data[0].content[0].text.value;
+      if (status === STATUS_CODES.COMPLETED) {
+        const messages = await openaiClient.beta.threads.messages.list(
+          thread_id,
+          run_id
+        );
 
-      return res.json({ response: response });
+        const response = await messages.data[0].content[0].text.value;
+
+        return res.json({ response: response });
+      }
+
     }
-
-    res.json({ response: COMPLETED });
+  } catch (error) {
+    console.error(error);
+    res.json({ response: STATUS_CODES.ERROR });
   }
 
-  console.log("Run timed out");
-  res.json({ response: TIMEOUT });
+  console.error("Run timed out");
+  res.json({ response: STATUS_CODES.TIMEOUT });
 });
+
+const STATUS_CODES = {
+  COMPLETED: "completed",
+  ERROR: "error",
+  TIMEOUT: "timeout",
+  REQUIRES_ACTION: "requires_action",
+};
+
+const getOpenAiClient = async (apiKey, assistantId) => {
+  if (!aiClients.has(assistantId)) {
+    aiClients.set(assistantId, new OpenAI({ apiKey: apiKey }));
+  }
+
+  return aiClients.get(assistantId);
+}
 
 export { router };
