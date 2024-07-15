@@ -94,8 +94,9 @@ router.post("/check", async (req, res) => {
           thread_id,
           run_id
         );
-
-        const response = await messages.data[0].content[0].text.value;
+        const regex = /【.*source】/g;
+        const responseMessage = await messages.data[0].content[0].text.value;
+        const response = responseMessage.replace(regex, '');
 
         return res.json({ response: response });
       }
