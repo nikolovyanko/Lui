@@ -34,13 +34,9 @@ const retrieveRun = async (openaiClient, thread, runId) => {
     return openaiClient.beta.threads.runs.retrieve(thread, runId);
 };
 
-const listMessages = async (openaiClient, thread, runId) => {
-    return openaiClient.beta.threads.messages.list(thread, runId);
-};
-
 const getMessage = async (openaiClient, thread, run) => {
-    const messages = await listMessages(thread, run.id);
-    return await messages.data[0].content[0].text.value;
+    const messages = await openaiClient.beta.threads.messages.list(thread, run.id);
+    return messages.data[0].content[0].text.value;
 };
 
 const deleteThread = async (openaiClient, thread) => {
@@ -84,7 +80,6 @@ export {
     sendMessage,
     createRun,
     retrieveRun,
-    listMessages,
     getMessage,
     deleteThread,
     deleteThreads,

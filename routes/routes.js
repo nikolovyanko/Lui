@@ -22,8 +22,8 @@ router.post("/message", async (req, res) => {
 });
 
 const checkParams = async (req, res) => {
-    const {message, thread, manychatId, assistant} = req.body;
-    if (!message || !thread || !manychatId || !assistant) {
+    const {message,  assistant} = req.body;
+    if (!message || !assistant) {
         return res.status(400).json({error: "Missing required parameters"});
     }
 };
