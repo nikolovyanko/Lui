@@ -1,4 +1,4 @@
-import "./dotenv.js";
+import "./commons/dotenv.js";
 import bodyParser from "body-parser";
 import { router as appRoutes } from "./routes/routes.js";
 import express from "express";
