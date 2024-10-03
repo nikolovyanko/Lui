@@ -1,1 +1,1 @@
-# in-whatsapp-openai
+# Lui the maintenance assistant
