@@ -8,8 +8,7 @@ const getOpenAiClient = async (apiKey, assistantId) => {
     }
 
     return aiClients.get(assistantId);
-}
-
+};
 
 const createThread = async (openaiClient) => {
     const newThread = await openaiClient.beta.threads.create();
@@ -35,27 +34,27 @@ const retrieveRun = async (openaiClient, thread, runId) => {
 };
 
 const getMessage = async (openaiClient, thread, run) => {
-    const messages = await openaiClient.beta.threads.messages.list(thread, run.id);
+    const messages = await openaiClient.beta.threads.messages.list(
+        thread,
+        run.id,
+    );
     return messages.data[0].content[0].text.value;
 };
 
 const deleteThread = async (openaiClient, thread) => {
     await openaiClient.beta.threads.del(thread);
     console.log(`Thread deleted: ${thread}`);
+    return `Thread ${thread} deleted`;
 };
 
-const deleteThreads = async (openaiClient, threads) => {
-    let responseMessage = "";
-    for (const thread of threads) {
-        await openaiClient.beta.threads.del(thread);
-        responseMessage += `Thread ${thread} deleted\n`;
-    }
-    return responseMessage;
-};
-
-const submitToolsCall = async (openaiClient, thread, run, toolId, outputMessage) => {
+const submitToolsCall = async (
+    openaiClient,
+    thread,
+    run,
+    toolId,
+    outputMessage,
+) => {
     while (run.status !== "completed") {
-
         if (run.status === "requires_action") {
             await openaiClient.beta.threads.runs.submitToolOutputs(
                 thread,
@@ -74,7 +73,6 @@ const submitToolsCall = async (openaiClient, thread, run, toolId, outputMessage)
     }
 };
 
-
 export {
     createThread,
     sendMessage,
@@ -82,7 +80,6 @@ export {
     retrieveRun,
     getMessage,
     deleteThread,
-    deleteThreads,
     submitToolsCall,
-    getOpenAiClient
+    getOpenAiClient,
 };

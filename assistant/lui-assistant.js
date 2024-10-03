@@ -1,7 +1,18 @@
 import {CustomError} from "../commons/err/customError.js";
-import {getTodayDateInUK, getWhatsappDetails, runAssistant, FUNCTIONS} from "../commons/functions/shared-functions.js";
+import {
+    runAssistant,
+    logFeedback,
+    FUNCTIONS,
+} from "../commons/functions/shared-functions.js";
 
-const messageLui = async (openAiClient,message, thread, assistant, manychatId) => {
+const messageLui = async (
+    openAiClient,
+    message,
+    thread,
+    assistant,
+    manychatId,
+    logUrl,
+) => {
     try {
         return await runAssistant(
             openAiClient,
@@ -9,18 +20,28 @@ const messageLui = async (openAiClient,message, thread, assistant, manychatId) =
             thread,
             manychatId,
             assistant,
-            handleToolCalls
-            );
+            handleToolCalls,
+            logUrl,
+        );
     } catch (error) {
         console.error(`Error in lui-assistant : ${error.message}`, error);
-        throw new CustomError(`Error in lui-assistant : ${error.message}`, error);
+        throw new CustomError(
+            `Error in lui-assistant : ${error.message}`,
+            error,
+        );
     }
 };
 
-
-const handleToolCalls = async (openAiClient, thread, run, manychatId) => {
+const handleToolCalls = async (
+    openAiClient,
+    thread,
+    run,
+    manychatId,
+    logUrl,
+) => {
     const toolCalls = run.required_action.submit_tool_outputs.tool_calls;
     //Iterate over the tool calls to identify different functions
+    console.log("Tool calls:", toolCalls);
     for (const toolCall of toolCalls) {
         const toolType = toolCall.type;
         const toolId = toolCall.id;
@@ -30,10 +51,13 @@ const handleToolCalls = async (openAiClient, thread, run, manychatId) => {
             const functionArgs = toolCall.function.arguments;
 
             switch (functionName) {
-                case FUNCTIONS.GET_TODAY_DATE:
-                    return await getTodayDateInUK(openAiClient, thread, run, toolId);
-                case FUNCTIONS.GET_WHATSAPP_DETAILS:
-                    return await getWhatsappDetails(openAiClient, thread, run, toolId, manychatId);
+                case FUNCTIONS.FEEDBACK:
+                    return await logFeedback(
+                        thread,
+                        functionArgs,
+                        manychatId,
+                        logUrl,
+                    );
                 default:
                     break;
             }
