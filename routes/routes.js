@@ -21,7 +21,7 @@ router.delete("/threadDel", async (req, res) => {
         return res.json({message: responseMessage});
     } catch (error) {
         console.error(error);
-        return res.status(500).json({error: "Internal server error"});
+        return res.status(500).json({erorMessage: error.message});
     }
 });
 
@@ -50,7 +50,7 @@ router.post("/message", async (req, res) => {
         return res.json({responseMessage: response, thread});
     } catch (error) {
         console.error(error);
-        return res.status(500).json({error: "Internal server error"});
+        return res.status(500).json({erorMessage: error.message});
     }
 });
 

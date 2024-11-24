@@ -122,6 +122,11 @@ const runAssistant = async (
     );
     // Poll for the run status until it is completed
     while (run.status !== "completed") {
+        if (run.status === "failed") {
+            throw new Error(
+                `Error in Open-Ai Run with code: ${run.last_error.code} 
+                and message: ${run.last_error.message}`,);
+        }
         // Add a delay of 1.5 second
         await new Promise((resolve) => setTimeout(resolve, 1000));
         run = await retrieveRun(openAiClient, thread, run.id);

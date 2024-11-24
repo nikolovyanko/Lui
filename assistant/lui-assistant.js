@@ -1,4 +1,3 @@
-import {CustomError} from "../commons/err/customError.js";
 import {
     runAssistant,
     logFeedback,
@@ -25,7 +24,7 @@ const messageLui = async (
         );
     } catch (error) {
         console.error(`Error in lui-assistant : ${error.message}`, error);
-        throw new CustomError(
+        throw new Error(
             `Error in lui-assistant : ${error.message}`,
             error,
         );
