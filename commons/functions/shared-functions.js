@@ -84,16 +84,39 @@ const getWhatsappDetails = async (
     }
 };
 
-const logFeedback = async (thread, summary, manychatId, logUrl) => {
+const logFeedback = async (thread, summary, manychatId) => {
     try {
         console.log("Logging feedback...");
         const {issue_summary, issue_resolution_summary} = JSON.parse(summary);
 
-        await axios.post(logUrl, {
-            issue_summary,
-            issue_resolution_summary,
-            manychatId,
+        await axios.post(process.env.MANYCHAT_SET_FIELDS, {
+            subscriber_id: manychatId,
+            fields: [
+                {
+                    field_id: 11836696,
+                    field_value: issue_summary
+                },
+                {
+                    field_id: 11836697,
+                    field_value: issue_resolution_summary
+                }
+            ]
+        }, {
+            headers: {
+                'Authorization': `Bearer ${process.env.MANYCHAT_API_KEY}`
+            }
         });
+
+        //Call the Lui Feedback ManyChat Automation
+        const respCallAutomation = await axios.post(process.env.MANYCHAT_SEND_FLOW, {
+            subscriber_id: manychatId,
+            flow_ns: "content20241002104726_572926",
+        }, {
+            headers: {
+                'Authorization': `Bearer ${process.env.MANYCHAT_API_KEY}`
+            }
+        });
+        console.log(`${respCallAutomation}: response from Lui Feedback automation`)
 
         return {
             thread,
@@ -111,8 +134,7 @@ const runAssistant = async (
     initialThread,
     manychatId,
     assistant,
-    handleToolCalls,
-    logUrl,
+    handleToolCalls
 ) => {
     let {thread, run} = await initThreadAndRun(
         openAiClient,
@@ -136,8 +158,7 @@ const runAssistant = async (
                 openAiClient,
                 thread,
                 run,
-                manychatId,
-                logUrl,
+                manychatId
             );
         }
         //Checking the status at the end of the loop to avoid unnecessary polling

@@ -9,8 +9,7 @@ const messageLui = async (
     message,
     thread,
     assistant,
-    manychatId,
-    logUrl,
+    manychatId
 ) => {
     try {
         return await runAssistant(
@@ -19,14 +18,12 @@ const messageLui = async (
             thread,
             manychatId,
             assistant,
-            handleToolCalls,
-            logUrl,
+            handleToolCalls
         );
     } catch (error) {
         console.error(`Error in lui-assistant : ${error.message}`, error);
         throw new Error(
-            `Error in lui-assistant : ${error.message}`,
-            error,
+            `Error in lui-assistant : ${error.message}`
         );
     }
 };
@@ -36,7 +33,6 @@ const handleToolCalls = async (
     thread,
     run,
     manychatId,
-    logUrl,
 ) => {
     const toolCalls = run.required_action.submit_tool_outputs.tool_calls;
     //Iterate over the tool calls to identify different functions
@@ -54,8 +50,7 @@ const handleToolCalls = async (
                     return await logFeedback(
                         thread,
                         functionArgs,
-                        manychatId,
-                        logUrl,
+                        manychatId
                     );
                 default:
                     break;
